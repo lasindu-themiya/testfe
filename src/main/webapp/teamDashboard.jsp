@@ -12,5 +12,8 @@
 </head>
 <body>
 <h2>Welcome to the Team Dashboard!</h2>
+<a href="<%= request.getContextPath() %>/TeamServlet?action=update">update</a><br>
+<a href="<%= request.getContextPath() %>/TeamServlet?action=delete">delete</a><br>
+
 </body>
 </html>

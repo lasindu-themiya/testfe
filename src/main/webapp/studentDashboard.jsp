@@ -48,11 +48,16 @@
     </div>
 </div>
 <br>
-<a href="updateStudentProfile.jsp">Update</a><br>
+<a href="updateStudentProfile.jsp"> Update </a><br>
+<a href="updatePassword.jsp"> Change Password  </a><br>
+<a href="<%= request.getContextPath() %>/StudentServlet?action=viewProgressUpdates"> View Progress Updates </a><br>
+
+<a href="<%= request.getContextPath() %>/TeamServlet?action=add"> createTeam </a><br>
+
 <br><br>
-<a href="viewEvents.jsp">events</a><br>
+<a href="viewEvents.jsp"> events </a><br>
 
 
-<a href="/frontend_war/LogoutServlet">Logout</a>
+<a href="/frontend_war/LogoutServlet"> Logout </a>
 </body>
 </html>

@@ -96,6 +96,10 @@ public class LoginServlet extends HttpServlet {
             case "BATCHMATE":
                 request.getSession().setAttribute("userSId", jwtResponse.getUserId());
                 break;
+            case "LEADER":
+            case "MEMBER":
+                request.getSession().setAttribute("userSId", jwtResponse.getUserId());
+                break;
             case "LECTURER":
                 request.getSession().setAttribute("userLId", jwtResponse.getUserId());
                 break;

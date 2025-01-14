@@ -2,6 +2,8 @@ package com.example.frontend;
 
 import com.example.frontend.dto.AnnouncementResponse;
 import com.example.frontend.dto.InterviewResponse;
+import com.example.frontend.dto.PasswordUpdateRequest;
+import com.example.frontend.dto.ProgressUpdateResponse;
 import com.example.frontend.dto.WorkshopResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,8 +13,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -55,9 +56,21 @@ public class StudentServlet extends HttpServlet {
             case "viewInterviewsByBatch":
                 handleViewInterviews(request, response, false);
                 break;
+            case "viewProgressUpdates":
+                handleViewProgressUpdates(request, response);
+                break;
             default:
                 response.sendRedirect("studentDashboard.jsp");
                 break;
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String action = request.getParameter("action");
+
+        if ("updatePassword".equals(action)) {
+            handleUpdatePassword(request, response);
         }
     }
 
@@ -98,6 +111,70 @@ public class StudentServlet extends HttpServlet {
             request.setAttribute("error", "Failed to load interviews: " + e.getMessage());
         }
         request.getRequestDispatcher("student/viewInterviews.jsp").forward(request, response);
+    }
+
+    private void handleViewProgressUpdates(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String url = BASE_URL + "/view-progress";
+        try {
+            List<ProgressUpdateResponse> updates = fetchFromBackend(url, request, new TypeReference<List<ProgressUpdateResponse>>() {});
+            System.out.println("Progress updates fetched: " + (updates != null ? updates.size() : "null"));
+            request.setAttribute("progressUpdates", updates);
+        } catch (IOException e) {
+            e.printStackTrace();
+            request.setAttribute("error", "Failed to load progress updates: " + e.getMessage());
+        }
+        request.getRequestDispatcher("student/viewProgressUpdates.jsp").forward(request, response);
+    }
+
+    private void handleUpdatePassword(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String currentPassword = request.getParameter("currentPassword");
+        String newPassword = request.getParameter("newPassword");
+        String confirmPassword = request.getParameter("confirmPassword");
+
+        if (!newPassword.equals(confirmPassword)) {
+            request.setAttribute("error", "New passwords do not match.");
+            request.getRequestDispatcher("student/updatePassword.jsp").forward(request, response);
+            return;
+        }
+
+        try {
+            String url = BASE_URL + "/profile/password/update";
+            PasswordUpdateRequest passwordUpdateRequest = new PasswordUpdateRequest(currentPassword, newPassword);
+            ObjectMapper mapper = new ObjectMapper();
+            String jsonRequest = mapper.writeValueAsString(passwordUpdateRequest);
+
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setRequestMethod("PUT");
+            connection.setRequestProperty("Content-Type", "application/json");
+            String backendSessionId = (String) request.getSession().getAttribute("backendSessionId");
+
+            if (backendSessionId != null) {
+                connection.setRequestProperty("Cookie", backendSessionId);
+            } else {
+                throw new IOException("Backend session ID is missing. Ensure the student is logged in.");
+            }
+
+            connection.setDoOutput(true);
+            try (OutputStream os = connection.getOutputStream()) {
+                os.write(jsonRequest.getBytes("utf-8"));
+            }
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 200) {
+                response.sendRedirect("studentDashboard.jsp");
+            } else {
+                try (InputStream errorStream = connection.getErrorStream()) {
+                    String errorMessage = new BufferedReader(new InputStreamReader(errorStream))
+                            .lines()
+                            .reduce("", String::concat);
+                    request.setAttribute("error", errorMessage);
+                    request.getRequestDispatcher("student/updatePassword.jsp").forward(request, response);
+                }
+            }
+        } catch (Exception e) {
+            request.setAttribute("error", "An error occurred: " + e.getMessage());
+            request.getRequestDispatcher("student/updatePassword.jsp").forward(request, response);
+        }
     }
 
     private <T> T fetchFromBackend(String backendUrl, HttpServletRequest request, TypeReference<T> typeReference) throws IOException {
