@@ -47,9 +47,11 @@
         <p><b>Role:</b> <%= request.getAttribute("role") %></p>
     </div>
 </div>
-
+<br>
 <a href="updateStudentProfile.jsp">Update</a><br>
-<a href="student.jsp">Update</a><br>
+<br><br>
+<a href="viewEvents.jsp">events</a><br>
+
 
 <a href="/frontend_war/LogoutServlet">Logout</a>
 </body>
